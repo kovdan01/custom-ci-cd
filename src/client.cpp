@@ -1,4 +1,4 @@
-#include "utils/json.hpp"
+#include "data/serialization.h"
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/io_context.hpp>
@@ -7,7 +7,6 @@
 
 #include <iostream>
 #include <utility>
-#include <array>
 #include <fstream>
 #include <sstream>
 
@@ -73,28 +72,6 @@ Context parse_command_options(int argc, char* argv[])
     return Context{std::move(ip), port, std::move(repo), std::move(branch), std::move(env_json_filename)};
 }
 
-std::array<char, 2> write_uint16(std::uint16_t value)
-{
-    union
-    {
-        char buf[2];
-        std::uint16_t val;
-    };
-    val = value;
-    return { buf[0], buf[1] };
-}
-
-std::array<char, 4> write_uint32(std::uint32_t value)
-{
-    union
-    {
-        char buf[4];
-        std::uint32_t val;
-    };
-    val = value;
-    return { buf[0], buf[1], buf[2], buf[3] };
-}
-
 int main(int argc, char* argv[]) try
 {
     Context context;
@@ -131,10 +108,21 @@ int main(int argc, char* argv[]) try
 
         sock.connect(ep);
 
-        std::string repo_size(write_uint16(context.repo.size()).data(), 2);
-        std::string branch_size(write_uint16(context.branch.size()).data(), 2);
-        std::string json_size(write_uint32(json_content.size()).data(), 4);
-        std::string query = repo_size + context.repo + branch_size + context.branch + json_size + json_content;
+        std::size_t repo_size = context.repo.size();
+        std::size_t branch_size = context.branch.size();
+        std::size_t json_size = json_content.size();
+
+        if (repo_size   > std::numeric_limits<my::repo_sizeof_t>::max())
+            throw std::invalid_argument("Too long repository name");
+        if (branch_size > std::numeric_limits<my::branch_sizeof_t>::max())
+            throw std::invalid_argument("Too long branch name");
+        if (json_size   > std::numeric_limits<my::json_sizeof_t>::max())
+            throw std::invalid_argument("Too big json file");
+
+        std::string repo_size_str  (my::write_bytes(static_cast<my::repo_sizeof_t>  (repo_size)).  data(), sizeof(my::repo_sizeof_t));
+        std::string branch_size_str(my::write_bytes(static_cast<my::branch_sizeof_t>(branch_size)).data(), sizeof(my::branch_sizeof_t));
+        std::string json_size_str  (my::write_bytes(static_cast<my::json_sizeof_t>  (json_size)).  data(), sizeof(my::json_sizeof_t));
+        std::string query = repo_size_str + context.repo + branch_size_str + context.branch + json_size_str + json_content;
 
         ba::write(sock, ba::buffer(query, query.size()));
 

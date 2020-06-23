@@ -15,19 +15,25 @@ set(HEADERS
     src/include/network/session.h
 
     src/include/utils/thread_pool.h
-    src/include/utils/json.hpp)
+    src/include/utils/json.hpp
+
+    src/include/data/serialization.h)
 
 set(NETWORK
     src/network/server.cpp
     src/network/session.cpp)
 
+set(SERIALIZATION
+    src/data/serialization.cpp)
+
 set(UTILS
     src/utils/thread_pool.cpp)
 
-SET(SOURCES  ${NETWORK} ${UTILS})
+set(SERVER_SOURCES ${NETWORK} ${UTILS} ${SERIALIZATION})
+set(CLIENT_SOURCES ${SERIALIZATION})
 
-add_executable(ci-cd-server src/server.cpp ${SOURCES} ${HEADERS})
-add_executable(ci-cd-client src/client.cpp)
+add_executable(ci-cd-server src/server.cpp ${SERVER_SOURCES} ${HEADERS})
+add_executable(ci-cd-client src/client.cpp ${CLIENT_SOURCES})
 
 set_target_properties(ci-cd-server ci-cd-client PROPERTIES
     CXX_STANDARD 17

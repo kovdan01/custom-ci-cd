@@ -1,6 +1,7 @@
 #include "network/session.h"
 #include "utils/thread_pool.h"
 #include "utils/json.hpp"
+#include "data/serialization.h"
 
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/connect.hpp>
@@ -26,32 +27,6 @@ void Session::start()
     do_read();
 }
 
-std::uint16_t read_uint16(char* buffer)
-{
-    union
-    {
-        char buf[2];
-        std::uint16_t val;
-    };
-    buf[0] = buffer[0];
-    buf[1] = buffer[1];
-    return val;
-}
-
-std::uint32_t read_uint32(char* buffer)
-{
-    union
-    {
-        char buf[4];
-        std::uint32_t val;
-    };
-    buf[0] = buffer[0];
-    buf[1] = buffer[1];
-    buf[2] = buffer[2];
-    buf[3] = buffer[3];
-    return val;
-}
-
 std::optional<Session::SessionData> Session::get_data()
 {
     constexpr std::size_t REPO_SIZE_BYTES = 2;
@@ -68,19 +43,19 @@ std::optional<Session::SessionData> Session::get_data()
     if (!check_size(repo_data_begin))
         return std::nullopt;
 
-    std::uint16_t repo_size         = read_uint16(m_temp_str.data() + repo_size_begin);
+    std::uint16_t repo_size         = read_bytes(m_temp_str.data() + repo_size_begin, REPO_TAG);
     std::size_t   branch_size_begin = repo_data_begin + repo_size;
     std::size_t   branch_data_begin = branch_size_begin + BRANCH_SIZE_BYTES;
     if (!check_size(branch_data_begin))
         return std::nullopt;
 
-    std::uint16_t branch_size       = read_uint16(m_temp_str.data() + branch_size_begin);
+    std::uint16_t branch_size       = read_bytes(m_temp_str.data() + branch_size_begin, BRANCH_TAG);
     std::size_t   json_size_begin   = branch_data_begin + branch_size;
     std::size_t   json_data_begin   = json_size_begin + JSON_SIZE_BYTES;
     if (!check_size(json_data_begin))
         return std::nullopt;
 
-    std::uint32_t json_size         = read_uint32(m_temp_str.data() + json_size_begin);
+    std::uint32_t json_size         = read_bytes(m_temp_str.data() + json_size_begin, JSON_TAG);
     if (!check_size(json_data_begin + json_size))
         return std::nullopt;
 

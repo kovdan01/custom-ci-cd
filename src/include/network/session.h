@@ -50,7 +50,7 @@ private:
 
     tcp::socket m_socket;
 
-    static constexpr std::size_t BUFFER_SIZE = 1;
+    static constexpr std::size_t BUFFER_SIZE = 1024;
     char m_buffer[BUFFER_SIZE];
     std::string m_temp_str;
 
