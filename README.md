@@ -1,5 +1,7 @@
 # Custom CI/CD build pipeline
 
+**Disclaimer**: this is a final project for Otus C++ course: https://otus.ru/lessons/razrabotchik-cpp/. Homeworks for the course can be found in another repository: https://github.com/kovdan01/otus-cpp/. 
+
 A simple build pipeline that allows you to trigger a build on a specified branch of a github repository.
 
 The branch must contain a file `.build-config.json` with the following structure:
